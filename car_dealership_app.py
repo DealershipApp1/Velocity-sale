@@ -27,8 +27,7 @@ class CarDealershipApp:
         # Audi-themed header
         header_frame = tk.Frame(root, bg="black")
         header_frame.pack(fill="x")
-        header_label = tk.Label(header_frame, text="Audi Dealership App", font=("Helvetica", 20, "bold"), bg="black",
-                                fg="white")
+        header_label = tk.Label(header_frame, text="Audi Dealership App", font=("Helvetica", 20, "bold"), bg="black", fg="white")
         header_label.pack(pady=10)
 
         # Notebook with four tabs
@@ -46,21 +45,21 @@ class CarDealershipApp:
         self.notebook.add(self.manager_financing_tab, text="Manager Financing Options")
 
         # Data stores
-        self.service_appointments = []  # list of dicts for service
-        self.sales_appointments = []  # list of dicts for sales
-        self.inventory_items = []  # list of dicts for inventory
+        self.service_appointments = []   # list of dicts for service
+        self.sales_appointments = []     # list of dicts for sales
+        self.inventory_items = []        # list of dicts for inventory
 
         # Build scheduling grids (each is a weekly view)
         self.build_scheduling_grid(self.service_tab, "service")
         self.build_scheduling_grid(self.sales_tab, "sales")
 
         # Add "Add Appointment" buttons above each scheduling grid
-        ttk.Button(self.service_tab, text="Add Service Appointment", command=self.open_service_appointment_popup) \
+        ttk.Button(self.service_tab, text="Add Service Appointment", command=self.open_service_appointment_popup)\
             .pack(pady=5)
-        ttk.Button(self.sales_tab, text="Add Sales Appointment", command=self.open_sales_appointment_popup) \
+        ttk.Button(self.sales_tab, text="Add Sales Appointment", command=self.open_sales_appointment_popup)\
             .pack(pady=5)
 
-        # Build Inventory Management view (manager notes removed)
+        # Build Inventory Management view (with search and add new inventory)
         self.build_inventory_view()
 
         # Build Manager Financing Options view
@@ -70,7 +69,6 @@ class CarDealershipApp:
         """Create a grid view with 7 columns (days) and rows for time slots."""
         grid_frame = ttk.Frame(parent)
         grid_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        # Save cell frames in a dictionary for later placement of appointments.
         if sched_type == "service":
             self.service_grid_cells = {}
         else:
@@ -80,17 +78,17 @@ class CarDealershipApp:
         ttk.Label(grid_frame, text="").grid(row=0, column=0, sticky="nsew", padx=1, pady=1)
         for col, (day_letter, date_str) in enumerate(WEEK_DATES, start=1):
             header_text = f"{day_letter}\n{date_str}"
-            ttk.Label(grid_frame, text=header_text, borderwidth=1, relief="solid", width=15) \
+            ttk.Label(grid_frame, text=header_text, borderwidth=1, relief="solid", width=15)\
                 .grid(row=0, column=col, sticky="nsew", padx=1, pady=1)
 
         # Left column: time slots.
         for row, time_slot in enumerate(TIME_SLOTS, start=1):
-            ttk.Label(grid_frame, text=time_slot, borderwidth=1, relief="solid", width=10) \
+            ttk.Label(grid_frame, text=time_slot, borderwidth=1, relief="solid", width=10)\
                 .grid(row=row, column=0, sticky="nsew", padx=1, pady=1)
 
         # Create empty cells for each (day, time)
-        for row in range(1, len(TIME_SLOTS) + 1):
-            for col in range(1, len(WEEK_DATES) + 1):
+        for row in range(1, len(TIME_SLOTS)+1):
+            for col in range(1, len(WEEK_DATES)+1):
                 cell = tk.Frame(grid_frame, borderwidth=1, relief="solid", width=150, height=50)
                 cell.grid(row=row, column=col, sticky="nsew", padx=1, pady=1)
                 if sched_type == "service":
@@ -99,9 +97,9 @@ class CarDealershipApp:
                     self.sales_grid_cells[(col, row)] = cell
 
         # Configure grid to expand equally.
-        for col in range(len(WEEK_DATES) + 1):
+        for col in range(len(WEEK_DATES)+1):
             grid_frame.columnconfigure(col, weight=1)
-        for row in range(len(TIME_SLOTS) + 1):
+        for row in range(len(TIME_SLOTS)+1):
             grid_frame.rowconfigure(row, weight=1)
 
     def open_service_appointment_popup(self):
@@ -131,7 +129,7 @@ class CarDealershipApp:
         def add_service():
             cust = cust_var.get().strip()
             vin = vin_var.get().strip()
-            date_selected = cal.get_date()  # returns string in mm/dd/yy format
+            date_selected = cal.get_date()
             hour = hour_var.get()
             if not cust or not vin:
                 messagebox.showerror("Input Error", "Please fill in all fields.")
@@ -156,7 +154,7 @@ class CarDealershipApp:
                 lbl.pack(expand=True, fill="both")
             popup.destroy()
 
-        ttk.Button(popup, text="Add Appointment", command=add_service) \
+        ttk.Button(popup, text="Add Appointment", command=add_service)\
             .grid(row=4, column=0, columnspan=2, pady=10)
 
     def open_sales_appointment_popup(self):
@@ -208,69 +206,77 @@ class CarDealershipApp:
                 lbl.pack(expand=True, fill="both")
             popup.destroy()
 
-        ttk.Button(popup, text="Add Appointment", command=add_sales) \
+        ttk.Button(popup, text="Add Appointment", command=add_sales)\
             .grid(row=3, column=0, columnspan=2, pady=10)
 
     def build_inventory_view(self):
         """Build the Inventory Management view with search and a grid-of-boxes display."""
-        # Search bar at the top
+        # Search bar at the top with additional Year field
         search_frame = ttk.LabelFrame(self.inventory_tab, text="Search Inventory")
         search_frame.pack(fill="x", padx=10, pady=5)
         ttk.Label(search_frame, text="Make:").grid(row=0, column=0, padx=5, pady=5)
         self.inv_search_make_var = tk.StringVar()
         make_opts = ["All", "Audi", "BMW", "Mercedes", "Lexus", "Acura"]
-        ttk.Combobox(search_frame, textvariable=self.inv_search_make_var, values=make_opts, state="readonly") \
+        ttk.Combobox(search_frame, textvariable=self.inv_search_make_var, values=make_opts, state="readonly")\
             .grid(row=0, column=1, padx=5, pady=5)
         self.inv_search_make_var.set("All")
 
         ttk.Label(search_frame, text="Model:").grid(row=0, column=2, padx=5, pady=5)
         self.inv_search_model_var = tk.StringVar()
-        ttk.Entry(search_frame, textvariable=self.inv_search_model_var, width=10) \
+        ttk.Entry(search_frame, textvariable=self.inv_search_model_var, width=10)\
             .grid(row=0, column=3, padx=5, pady=5)
 
         ttk.Label(search_frame, text="Type:").grid(row=0, column=4, padx=5, pady=5)
         self.inv_search_type_var = tk.StringVar()
-        ttk.Combobox(search_frame, textvariable=self.inv_search_type_var, values=["All", "New", "Used"],
-                     state="readonly") \
+        ttk.Combobox(search_frame, textvariable=self.inv_search_type_var, values=["All", "New", "Used"], state="readonly")\
             .grid(row=0, column=5, padx=5, pady=5)
         self.inv_search_type_var.set("All")
 
-        ttk.Button(search_frame, text="Search", command=self.search_inventory).grid(row=0, column=6, padx=5)
-        ttk.Button(search_frame, text="Reset", command=self.reset_inventory_search).grid(row=0, column=7, padx=5)
+        ttk.Label(search_frame, text="Year:").grid(row=0, column=6, padx=5, pady=5)
+        self.inv_search_year_var = tk.StringVar()
+        ttk.Entry(search_frame, textvariable=self.inv_search_year_var, width=6)\
+            .grid(row=0, column=7, padx=5, pady=5)
 
-        # Form for adding a new inventory item
+        ttk.Button(search_frame, text="Search", command=self.search_inventory).grid(row=0, column=8, padx=5)
+        ttk.Button(search_frame, text="Reset", command=self.reset_inventory_search).grid(row=0, column=9, padx=5)
+
+        # Form for adding a new inventory item (now with Year)
         add_frame = ttk.LabelFrame(self.inventory_tab, text="Add New Inventory Item")
         add_frame.pack(fill="x", padx=10, pady=5)
         ttk.Label(add_frame, text="Type:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
         self.inv_type_var = tk.StringVar()
-        ttk.Combobox(add_frame, textvariable=self.inv_type_var, values=["New", "Used"], state="readonly") \
+        ttk.Combobox(add_frame, textvariable=self.inv_type_var, values=["New", "Used"], state="readonly")\
             .grid(row=0, column=1, padx=5, pady=5)
         self.inv_type_var.set("New")
 
         ttk.Label(add_frame, text="Make:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
         self.inv_make_var = tk.StringVar()
-        ttk.Combobox(add_frame, textvariable=self.inv_make_var, values=["Audi", "BMW", "Mercedes", "Lexus", "Acura"],
-                     state="readonly") \
+        ttk.Combobox(add_frame, textvariable=self.inv_make_var, values=["Audi", "BMW", "Mercedes", "Lexus", "Acura"], state="readonly")\
             .grid(row=1, column=1, padx=5, pady=5)
         self.inv_make_var.set("Audi")
 
         ttk.Label(add_frame, text="Model:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
         self.inv_model_var = tk.StringVar()
-        ttk.Entry(add_frame, textvariable=self.inv_model_var) \
+        ttk.Entry(add_frame, textvariable=self.inv_model_var)\
             .grid(row=2, column=1, padx=5, pady=5)
 
-        ttk.Label(add_frame, text="VIN:").grid(row=3, column=0, padx=5, pady=5, sticky="e")
-        self.inv_vin_var = tk.StringVar()
-        ttk.Entry(add_frame, textvariable=self.inv_vin_var) \
+        ttk.Label(add_frame, text="Year:").grid(row=3, column=0, padx=5, pady=5, sticky="e")
+        self.inv_year_var = tk.StringVar()
+        ttk.Entry(add_frame, textvariable=self.inv_year_var, width=6)\
             .grid(row=3, column=1, padx=5, pady=5)
 
-        ttk.Label(add_frame, text="Price:").grid(row=4, column=0, padx=5, pady=5, sticky="e")
-        self.inv_price_var = tk.StringVar()
-        ttk.Entry(add_frame, textvariable=self.inv_price_var) \
+        ttk.Label(add_frame, text="VIN:").grid(row=4, column=0, padx=5, pady=5, sticky="e")
+        self.inv_vin_var = tk.StringVar()
+        ttk.Entry(add_frame, textvariable=self.inv_vin_var)\
             .grid(row=4, column=1, padx=5, pady=5)
 
-        ttk.Button(add_frame, text="Add Inventory", command=self.add_inventory_item) \
-            .grid(row=5, column=0, columnspan=2, pady=10)
+        ttk.Label(add_frame, text="Price:").grid(row=5, column=0, padx=5, pady=5, sticky="e")
+        self.inv_price_var = tk.StringVar()
+        ttk.Entry(add_frame, textvariable=self.inv_price_var)\
+            .grid(row=5, column=1, padx=5, pady=5)
+
+        ttk.Button(add_frame, text="Add Inventory", command=self.add_inventory_item)\
+            .grid(row=6, column=0, columnspan=2, pady=10)
 
         # Display inventory items as boxes (grid layout)
         self.inv_display_frame = ttk.Frame(self.inventory_tab)
@@ -282,10 +288,15 @@ class CarDealershipApp:
             widget.destroy()
         cols = 3
         for i, item in enumerate(self.inventory_items):
-            box = ttk.LabelFrame(self.inv_display_frame, text=f"{item['make']} {item['model']}", relief="solid")
+            # Display all financing options joined by newline if available.
+            fin_options = "\n".join(item.get("financing_options", [])) if item.get("financing_options") else "N/A"
+            box = ttk.LabelFrame(self.inv_display_frame, text=f"{item['make']} {item['model']} ({item.get('year', 'N/A')})", relief="solid")
             box.grid(row=i // cols, column=i % cols, padx=5, pady=5, sticky="nsew")
-            info = f"Type: {item['type']}\nVIN: {item['vin']}\nPrice: {item['price']}\nFinancing: {item.get('financing', 'N/A')}"
+            info = f"Type: {item['type']}\nVIN: {item['vin']}\nPrice: {item['price']}\nFinancing:\n{fin_options}"
             ttk.Label(box, text=info, wraplength=200).pack(padx=5, pady=5)
+            # Add a button to add financing for this car directly
+            ttk.Button(box, text="Add Financing", command=lambda vin=item['vin']: self.open_financing_options_for_item(vin))\
+                .pack(padx=5, pady=5)
         for c in range(cols):
             self.inv_display_frame.columnconfigure(c, weight=1)
 
@@ -294,8 +305,10 @@ class CarDealershipApp:
             "type": self.inv_type_var.get().strip(),
             "make": self.inv_make_var.get().strip(),
             "model": self.inv_model_var.get().strip(),
+            "year": self.inv_year_var.get().strip(),
             "vin": self.inv_vin_var.get().strip(),
-            "price": self.inv_price_var.get().strip()
+            "price": self.inv_price_var.get().strip(),
+            "financing_options": []  # initialize as empty list
         }
         if not all(inv_item.values()):
             messagebox.showerror("Input Error", "Please fill in all fields for inventory item.")
@@ -312,6 +325,7 @@ class CarDealershipApp:
         self.inv_type_var.set("New")
         self.inv_make_var.set("Audi")
         self.inv_model_var.set("")
+        self.inv_year_var.set("")
         self.inv_vin_var.set("")
         self.inv_price_var.set("")
 
@@ -319,6 +333,7 @@ class CarDealershipApp:
         search_make = self.inv_search_make_var.get().strip().lower()
         search_model = self.inv_search_model_var.get().strip().lower()
         search_type = self.inv_search_type_var.get().strip().lower()
+        search_year = self.inv_search_year_var.get().strip().lower()
         filtered = []
         for item in self.inventory_items:
             if search_make != "all" and search_make not in item['make'].lower():
@@ -327,16 +342,21 @@ class CarDealershipApp:
                 continue
             if search_type != "all" and search_type != item['type'].lower():
                 continue
+            if search_year and search_year not in item.get('year', '').lower():
+                continue
             filtered.append(item)
         self.inv_display_frame.destroy()
         self.inv_display_frame = ttk.Frame(self.inventory_tab)
         self.inv_display_frame.pack(fill="both", expand=True, padx=10, pady=5)
         cols = 3
         for i, item in enumerate(filtered):
-            box = ttk.LabelFrame(self.inv_display_frame, text=f"{item['make']} {item['model']}", relief="solid")
+            fin_options = "\n".join(item.get("financing_options", [])) if item.get("financing_options") else "N/A"
+            box = ttk.LabelFrame(self.inv_display_frame, text=f"{item['make']} {item['model']} ({item.get('year', 'N/A')})", relief="solid")
             box.grid(row=i // cols, column=i % cols, padx=5, pady=5, sticky="nsew")
-            info = f"Type: {item['type']}\nVIN: {item['vin']}\nPrice: {item['price']}\nFinancing: {item.get('financing', 'N/A')}"
+            info = f"Type: {item['type']}\nVIN: {item['vin']}\nPrice: {item['price']}\nFinancing:\n{fin_options}"
             ttk.Label(box, text=info, wraplength=200).pack(padx=5, pady=5)
+            ttk.Button(box, text="Add Financing", command=lambda vin=item['vin']: self.open_financing_options_for_item(vin))\
+                .pack(padx=5, pady=5)
         for c in range(cols):
             self.inv_display_frame.columnconfigure(c, weight=1)
 
@@ -344,6 +364,7 @@ class CarDealershipApp:
         self.inv_search_make_var.set("All")
         self.inv_search_model_var.set("")
         self.inv_search_type_var.set("All")
+        self.inv_search_year_var.set("")
         self.refresh_inventory_display()
 
     def build_manager_financing_view(self):
@@ -357,21 +378,28 @@ class CarDealershipApp:
             self.fin_vin_combo.current(0)
         self.fin_vin_combo.pack(side="left", padx=5)
 
-        ttk.Button(top_frame, text="Set Financing Options", command=self.open_manager_financing_popup) \
+        ttk.Button(top_frame, text="Set Financing Options", command=self.open_manager_financing_popup)\
             .pack(side="left", padx=5)
 
-        self.manager_financing_tree = ttk.Treeview(self.manager_financing_tab, columns=("VIN", "Financing"),
-                                                   show="headings")
+        self.manager_financing_tree = ttk.Treeview(self.manager_financing_tab, columns=("VIN", "Financing"), show="headings")
         self.manager_financing_tree.heading("VIN", text="VIN")
         self.manager_financing_tree.heading("Financing", text="Financing Options")
         self.manager_financing_tree.pack(fill="both", expand=True, padx=10, pady=5)
         self.refresh_manager_financing_tree()
 
     def open_manager_financing_popup(self):
+        # Uses the VIN selected in the dropdown from the manager financing tab.
         selected_vin = self.fin_vin_var.get().strip()
         if not selected_vin:
             messagebox.showerror("Input Error", "Please select an inventory item (by VIN).")
             return
+        self.open_financing_options_popup(selected_vin)
+
+    def open_financing_options_for_item(self, vin):
+        # Opens the financing popup for a given inventory item from its box button.
+        self.open_financing_options_popup(vin)
+
+    def open_financing_options_popup(self, selected_vin):
         popup = tk.Toplevel(self.root)
         popup.title("Set Financing Options")
 
@@ -386,7 +414,7 @@ class CarDealershipApp:
         ttk.Label(popup, text="Financing Months:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
         months_opts = [str(m) for m in range(36, 145, 6)]
         fin_months_var = tk.StringVar()
-        ttk.Combobox(popup, textvariable=fin_months_var, values=months_opts, state="readonly") \
+        ttk.Combobox(popup, textvariable=fin_months_var, values=months_opts, state="readonly")\
             .grid(row=2, column=1, padx=5, pady=5)
         fin_months_var.set(months_opts[0])
 
@@ -412,25 +440,30 @@ class CarDealershipApp:
                     payment = principal / months
                 else:
                     payment = (principal * monthly_rate) / (1 - (1 + monthly_rate) ** -months)
-                result_label.config(text=f"Monthly Payment: ${payment:.2f}")
+                result = f"${payment:.2f}/month for {months} months at {apr}% APR"
+                result_label.config(text=f"Monthly Payment: {result}")
+                # Append the financing option to the inventory item's financing_options list.
                 for item in self.inventory_items:
                     if item['vin'] == selected_vin:
-                        item['financing'] = f"${payment:.2f}/month for {months} months at {apr}% APR"
+                        if 'financing_options' not in item:
+                            item['financing_options'] = []
+                        item['financing_options'].append(result)
                         break
                 self.refresh_inventory_display()
                 self.refresh_manager_financing_tree()
             except Exception as e:
                 messagebox.showerror("Input Error", f"Invalid input: {e}")
 
-        ttk.Button(popup, text="Calculate & Save Financing", command=calculate_financing) \
+        ttk.Button(popup, text="Calculate & Save Financing", command=calculate_financing)\
             .grid(row=4, column=0, columnspan=2, pady=10)
 
     def refresh_manager_financing_tree(self):
         for child in self.manager_financing_tree.get_children():
             self.manager_financing_tree.delete(child)
         for item in self.inventory_items:
-            if 'financing' in item:
-                self.manager_financing_tree.insert("", "end", values=(item['vin'], item['financing']))
+            if item.get('financing_options'):
+                fin_options = "\n".join(item['financing_options'])
+                self.manager_financing_tree.insert("", "end", values=(item['vin'], fin_options))
 
 
 if __name__ == "__main__":
