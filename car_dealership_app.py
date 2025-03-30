@@ -42,12 +42,12 @@ class CarDealershipApp:
         self.notebook.add(self.service_tab, text="Service Scheduling")
         self.notebook.add(self.sales_tab, text="Sales Scheduling")
         self.notebook.add(self.inventory_tab, text="Inventory Management")
-        self.notebook.add(self.manager_financing_tab, text="Manager Financing Options")
+        self.notebook.add(self.manager_financing_tab, text="Manager Financing & Lease Options")
 
         # Data stores
         self.service_appointments = []   # list of dicts for service
         self.sales_appointments = []     # list of dicts for sales
-        self.inventory_items = []        # list of dicts for inventory
+        self.inventory_items = []        # list of dicts for inventory; each item will include financing and lease options
 
         # Build scheduling grids (each is a weekly view)
         self.build_scheduling_grid(self.service_tab, "service")
@@ -62,7 +62,7 @@ class CarDealershipApp:
         # Build Inventory Management view (with search and add new inventory)
         self.build_inventory_view()
 
-        # Build Manager Financing Options view
+        # Build Manager Financing & Lease Options view
         self.build_manager_financing_view()
 
     def build_scheduling_grid(self, parent, sched_type):
@@ -129,7 +129,7 @@ class CarDealershipApp:
         def add_service():
             cust = cust_var.get().strip()
             vin = vin_var.get().strip()
-            date_selected = cal.get_date()
+            date_selected = cal.get_date()  # returns string in mm/dd/yy format
             hour = hour_var.get()
             if not cust or not vin:
                 messagebox.showerror("Input Error", "Please fill in all fields.")
@@ -288,46 +288,75 @@ class CarDealershipApp:
             widget.destroy()
         cols = 3
         for i, item in enumerate(self.inventory_items):
-            # Display all financing options joined by newline if available.
             fin_options = "\n".join(item.get("financing_options", [])) if item.get("financing_options") else "N/A"
-            box = ttk.LabelFrame(self.inv_display_frame, text=f"{item['make']} {item['model']} ({item.get('year', 'N/A')})", relief="solid")
+            lease_options = "\n".join(item.get("lease_options", [])) if item.get("lease_options") else "N/A"
+            box_text = f"{item['make']} {item['model']} ({item.get('year', 'N/A')})"
+            box = ttk.LabelFrame(self.inv_display_frame, text=box_text, relief="solid")
             box.grid(row=i // cols, column=i % cols, padx=5, pady=5, sticky="nsew")
-            info = f"Type: {item['type']}\nVIN: {item['vin']}\nPrice: {item['price']}\nFinancing:\n{fin_options}"
+            info = f"Type: {item['type']}\nVIN: {item['vin']}\nPrice: {item['price']}\n\nFinancing:\n{fin_options}\n\nLease:\n{lease_options}"
             ttk.Label(box, text=info, wraplength=200).pack(padx=5, pady=5)
-            # Add a button to add financing for this car directly
-            ttk.Button(box, text="Add Financing", command=lambda vin=item['vin']: self.open_financing_options_for_item(vin))\
-                .pack(padx=5, pady=5)
+            btn_frame = ttk.Frame(box)
+            btn_frame.pack(padx=5, pady=5)
+            ttk.Button(btn_frame, text="Add Financing", command=lambda vin=item['vin']: self.open_financing_options_for_item(vin))\
+                .grid(row=0, column=0, padx=5)
+            ttk.Button(btn_frame, text="Add Lease", command=lambda vin=item['vin']: self.open_lease_options_for_item(vin))\
+                .grid(row=0, column=1, padx=5)
         for c in range(cols):
             self.inv_display_frame.columnconfigure(c, weight=1)
 
     def add_inventory_item(self):
-        inv_item = {
-            "type": self.inv_type_var.get().strip(),
-            "make": self.inv_make_var.get().strip(),
-            "model": self.inv_model_var.get().strip(),
-            "year": self.inv_year_var.get().strip(),
-            "vin": self.inv_vin_var.get().strip(),
-            "price": self.inv_price_var.get().strip(),
-            "financing_options": []  # initialize as empty list
-        }
-        if not all(inv_item.values()):
-            messagebox.showerror("Input Error", "Please fill in all fields for inventory item.")
-            return
-        self.inventory_items.append(inv_item)
-        self.refresh_inventory_display()
-        # Update manager financing VIN dropdown if available.
-        if hasattr(self, 'fin_vin_combo'):
-            vin_opts = [item['vin'] for item in self.inventory_items]
-            self.fin_vin_combo['values'] = vin_opts
-            if vin_opts:
-                self.fin_vin_combo.current(0)
-        messagebox.showinfo("Inventory Added", "Inventory item added successfully.")
-        self.inv_type_var.set("New")
-        self.inv_make_var.set("Audi")
-        self.inv_model_var.set("")
-        self.inv_year_var.set("")
-        self.inv_vin_var.set("")
-        self.inv_price_var.set("")
+            inv_item = {
+                "type": self.inv_type_var.get().strip(),
+                "make": self.inv_make_var.get().strip(),
+                "model": self.inv_model_var.get().strip(),
+                "year": self.inv_year_var.get().strip(),
+                "vin": self.inv_vin_var.get().strip(),
+                "price": self.inv_price_var.get().strip(),
+                "financing_options": [],
+                "lease_options": []
+            }
+            # Debug print: show the inventory item
+            print("Attempting to add inventory item:", inv_item)
+
+            # Check only the required fields that the user fills in.
+            required_fields = [
+                inv_item["type"],
+                inv_item["make"],
+                inv_item["model"],
+                inv_item["year"],
+                inv_item["vin"],
+                inv_item["price"]
+            ]
+            if not all(required_fields):
+                messagebox.showerror("Input Error", "Please fill in all required fields for inventory item.")
+                print("Add inventory aborted: required fields missing.")
+                return
+
+            self.inventory_items.append(inv_item)
+            print("Inventory item added. Total items now:", len(self.inventory_items))
+            self.refresh_inventory_display()
+
+            # Update manager financing and lease VIN dropdowns if available.
+            if hasattr(self, 'fin_vin_combo'):
+                vin_opts = [item['vin'] for item in self.inventory_items]
+                self.fin_vin_combo['values'] = vin_opts
+                if vin_opts:
+                    self.fin_vin_combo.current(0)
+            if hasattr(self, 'lease_vin_combo'):
+                vin_opts = [item['vin'] for item in self.inventory_items]
+                self.lease_vin_combo['values'] = vin_opts
+                if vin_opts:
+                    self.lease_vin_combo.current(0)
+
+            messagebox.showinfo("Inventory Added", "Inventory item added successfully.")
+
+            # Clear the input fields.
+            self.inv_type_var.set("New")
+            self.inv_make_var.set("Audi")
+            self.inv_model_var.set("")
+            self.inv_year_var.set("")
+            self.inv_vin_var.set("")
+            self.inv_price_var.set("")
 
     def search_inventory(self):
         search_make = self.inv_search_make_var.get().strip().lower()
@@ -351,12 +380,18 @@ class CarDealershipApp:
         cols = 3
         for i, item in enumerate(filtered):
             fin_options = "\n".join(item.get("financing_options", [])) if item.get("financing_options") else "N/A"
-            box = ttk.LabelFrame(self.inv_display_frame, text=f"{item['make']} {item['model']} ({item.get('year', 'N/A')})", relief="solid")
+            lease_options = "\n".join(item.get("lease_options", [])) if item.get("lease_options") else "N/A"
+            box_text = f"{item['make']} {item['model']} ({item.get('year', 'N/A')})"
+            box = ttk.LabelFrame(self.inv_display_frame, text=box_text, relief="solid")
             box.grid(row=i // cols, column=i % cols, padx=5, pady=5, sticky="nsew")
-            info = f"Type: {item['type']}\nVIN: {item['vin']}\nPrice: {item['price']}\nFinancing:\n{fin_options}"
+            info = f"Type: {item['type']}\nVIN: {item['vin']}\nPrice: {item['price']}\n\nFinancing:\n{fin_options}\n\nLease:\n{lease_options}"
             ttk.Label(box, text=info, wraplength=200).pack(padx=5, pady=5)
-            ttk.Button(box, text="Add Financing", command=lambda vin=item['vin']: self.open_financing_options_for_item(vin))\
-                .pack(padx=5, pady=5)
+            btn_frame = ttk.Frame(box)
+            btn_frame.pack(padx=5, pady=5)
+            ttk.Button(btn_frame, text="Add Financing", command=lambda vin=item['vin']: self.open_financing_options_for_item(vin))\
+                .grid(row=0, column=0, padx=5)
+            ttk.Button(btn_frame, text="Add Lease", command=lambda vin=item['vin']: self.open_lease_options_for_item(vin))\
+                .grid(row=0, column=1, padx=5)
         for c in range(cols):
             self.inv_display_frame.columnconfigure(c, weight=1)
 
@@ -368,36 +403,70 @@ class CarDealershipApp:
         self.refresh_inventory_display()
 
     def build_manager_financing_view(self):
+        # Top frame for financing options
         top_frame = ttk.Frame(self.manager_financing_tab)
         top_frame.pack(fill="x", padx=10, pady=5)
-        ttk.Label(top_frame, text="Select Inventory VIN:").pack(side="left", padx=5)
+        ttk.Label(top_frame, text="Select Inventory VIN for Financing:").pack(side="left", padx=5)
         self.fin_vin_var = tk.StringVar()
         vin_opts = [item['vin'] for item in self.inventory_items]
         self.fin_vin_combo = ttk.Combobox(top_frame, textvariable=self.fin_vin_var, values=vin_opts, state="readonly")
         if vin_opts:
             self.fin_vin_combo.current(0)
         self.fin_vin_combo.pack(side="left", padx=5)
-
         ttk.Button(top_frame, text="Set Financing Options", command=self.open_manager_financing_popup)\
             .pack(side="left", padx=5)
 
+        # Frame for financing options tree
         self.manager_financing_tree = ttk.Treeview(self.manager_financing_tab, columns=("VIN", "Financing"), show="headings")
         self.manager_financing_tree.heading("VIN", text="VIN")
         self.manager_financing_tree.heading("Financing", text="Financing Options")
         self.manager_financing_tree.pack(fill="both", expand=True, padx=10, pady=5)
+
+        # Separator between financing and lease sections
+        sep = ttk.Separator(self.manager_financing_tab, orient="horizontal")
+        sep.pack(fill="x", padx=10, pady=10)
+
+        # Top frame for lease options
+        lease_top_frame = ttk.Frame(self.manager_financing_tab)
+        lease_top_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Label(lease_top_frame, text="Select Inventory VIN for Lease:").pack(side="left", padx=5)
+        self.lease_vin_var = tk.StringVar()
+        vin_opts = [item['vin'] for item in self.inventory_items]
+        self.lease_vin_combo = ttk.Combobox(lease_top_frame, textvariable=self.lease_vin_var, values=vin_opts, state="readonly")
+        if vin_opts:
+            self.lease_vin_combo.current(0)
+        self.lease_vin_combo.pack(side="left", padx=5)
+        ttk.Button(lease_top_frame, text="Set Lease Options", command=self.open_manager_lease_popup)\
+            .pack(side="left", padx=5)
+
+        # Frame for lease options tree
+        self.manager_lease_tree = ttk.Treeview(self.manager_financing_tab, columns=("VIN", "Lease"), show="headings")
+        self.manager_lease_tree.heading("VIN", text="VIN")
+        self.manager_lease_tree.heading("Lease", text="Lease Options")
+        self.manager_lease_tree.pack(fill="both", expand=True, padx=10, pady=5)
+
         self.refresh_manager_financing_tree()
+        self.refresh_manager_lease_tree()
 
     def open_manager_financing_popup(self):
-        # Uses the VIN selected in the dropdown from the manager financing tab.
         selected_vin = self.fin_vin_var.get().strip()
         if not selected_vin:
             messagebox.showerror("Input Error", "Please select an inventory item (by VIN).")
             return
         self.open_financing_options_popup(selected_vin)
 
+    def open_manager_lease_popup(self):
+        selected_vin = self.lease_vin_var.get().strip()
+        if not selected_vin:
+            messagebox.showerror("Input Error", "Please select an inventory item (by VIN).")
+            return
+        self.open_lease_options_popup(selected_vin)
+
     def open_financing_options_for_item(self, vin):
-        # Opens the financing popup for a given inventory item from its box button.
         self.open_financing_options_popup(vin)
+
+    def open_lease_options_for_item(self, vin):
+        self.open_lease_options_popup(vin)
 
     def open_financing_options_popup(self, selected_vin):
         popup = tk.Toplevel(self.root)
@@ -412,11 +481,12 @@ class CarDealershipApp:
         ttk.Entry(popup, textvariable=money_down_var).grid(row=1, column=1, padx=5, pady=5)
 
         ttk.Label(popup, text="Financing Months:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
-        months_opts = [str(m) for m in range(36, 145, 6)]
+        # For financing options, months range 60-144 (increments of 12)
+        fin_months_opts = [str(m) for m in range(60, 145, 12)]
         fin_months_var = tk.StringVar()
-        ttk.Combobox(popup, textvariable=fin_months_var, values=months_opts, state="readonly")\
+        ttk.Combobox(popup, textvariable=fin_months_var, values=fin_months_opts, state="readonly")\
             .grid(row=2, column=1, padx=5, pady=5)
-        fin_months_var.set(months_opts[0])
+        fin_months_var.set(fin_months_opts[0])
 
         ttk.Label(popup, text="APR Rate (%):").grid(row=3, column=0, padx=5, pady=5, sticky="e")
         apr_var = tk.StringVar(value="3.5")
@@ -442,19 +512,71 @@ class CarDealershipApp:
                     payment = (principal * monthly_rate) / (1 - (1 + monthly_rate) ** -months)
                 result = f"${payment:.2f}/month for {months} months at {apr}% APR"
                 result_label.config(text=f"Monthly Payment: {result}")
-                # Append the financing option to the inventory item's financing_options list.
                 for item in self.inventory_items:
                     if item['vin'] == selected_vin:
-                        if 'financing_options' not in item:
-                            item['financing_options'] = []
-                        item['financing_options'].append(result)
+                        item.setdefault('financing_options', []).append(result)
                         break
                 self.refresh_inventory_display()
                 self.refresh_manager_financing_tree()
+                popup.destroy()
             except Exception as e:
                 messagebox.showerror("Input Error", f"Invalid input: {e}")
 
         ttk.Button(popup, text="Calculate & Save Financing", command=calculate_financing)\
+            .grid(row=4, column=0, columnspan=2, pady=10)
+
+    def open_lease_options_popup(self, selected_vin):
+        popup = tk.Toplevel(self.root)
+        popup.title("Set Lease Options")
+
+        ttk.Label(popup, text="Lowest Price:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
+        lowest_price_var = tk.StringVar()
+        ttk.Entry(popup, textvariable=lowest_price_var).grid(row=0, column=1, padx=5, pady=5)
+
+        ttk.Label(popup, text="Money Down:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        money_down_var = tk.StringVar()
+        ttk.Entry(popup, textvariable=money_down_var).grid(row=1, column=1, padx=5, pady=5)
+
+        ttk.Label(popup, text="Lease Months:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        # For lease options, months range 12-36 (increments of 1)
+        lease_months_opts = [str(m) for m in range(12, 37)]
+        lease_months_var = tk.StringVar()
+        ttk.Combobox(popup, textvariable=lease_months_var, values=lease_months_opts, state="readonly")\
+            .grid(row=2, column=1, padx=5, pady=5)
+        lease_months_var.set(lease_months_opts[0])
+
+        ttk.Label(popup, text="APR Rate (%):").grid(row=3, column=0, padx=5, pady=5, sticky="e")
+        apr_var = tk.StringVar(value="3.5")
+        ttk.Entry(popup, textvariable=apr_var).grid(row=3, column=1, padx=5, pady=5)
+
+        result_label = ttk.Label(popup, text="Monthly Lease Payment: ")
+        result_label.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
+
+        def calculate_lease():
+            try:
+                lowest_price = float(lowest_price_var.get().strip())
+                money_down = float(money_down_var.get().strip())
+                months = int(lease_months_var.get().strip())
+                apr = float(apr_var.get().strip())
+                principal = lowest_price - money_down
+                if principal <= 0:
+                    messagebox.showerror("Input Error", "Money down must be less than the lowest price.")
+                    return
+                # Simplified lease calculation: (Principal) divided by lease term.
+                lease_payment = principal / months
+                result = f"${lease_payment:.2f}/month for {months} months at {apr}% APR (Lease)"
+                result_label.config(text=f"Monthly Lease Payment: {result}")
+                for item in self.inventory_items:
+                    if item['vin'] == selected_vin:
+                        item.setdefault('lease_options', []).append(result)
+                        break
+                self.refresh_inventory_display()
+                self.refresh_manager_lease_tree()
+                popup.destroy()
+            except Exception as e:
+                messagebox.showerror("Input Error", f"Invalid input: {e}")
+
+        ttk.Button(popup, text="Calculate & Save Lease", command=calculate_lease)\
             .grid(row=4, column=0, columnspan=2, pady=10)
 
     def refresh_manager_financing_tree(self):
@@ -465,8 +587,17 @@ class CarDealershipApp:
                 fin_options = "\n".join(item['financing_options'])
                 self.manager_financing_tree.insert("", "end", values=(item['vin'], fin_options))
 
+    def refresh_manager_lease_tree(self):
+        for child in self.manager_lease_tree.get_children():
+            self.manager_lease_tree.delete(child)
+        for item in self.inventory_items:
+            if item.get('lease_options'):
+                lease_options = "\n".join(item['lease_options'])
+                self.manager_lease_tree.insert("", "end", values=(item['vin'], lease_options))
+
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = CarDealershipApp(root)
     root.mainloop()
+
